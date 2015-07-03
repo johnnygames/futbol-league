@@ -1,6 +1,6 @@
 var React = require('react');
 var _ = require('underscore');
-var $ = require('jquery');
+var helpers = require('./utils/api-utils.js');
 var Navigation = require('./navigation.jsx');
 var TeamPage = require('./team-page.jsx');
 var MatchPage = require('./match-page.jsx');
@@ -36,56 +36,19 @@ var App = React.createClass({
       goals: []
     };
   },
-
   componentDidMount: function() {
-    $.ajax({type: 'GET',
-              url: this.props.source,
-              dataType: 'jsonp',
-              success: function (data) {
-                if (this.isMounted()) {
-                  this.setState({
-                    teams: data
-                  });
-                }
-              }.bind(this)
-    });
-    $.ajax({
-      type: 'GET',
-      url: this.props.matches,
-      dataType: 'jsonp',
-      success: function (data) {
-        if (this.isMounted()) {
-          this.setState({
-            totalWins: data
-          });
-        }
-      this.calculateRanking();
-      this.getMatchData();
-      }.bind(this)
-    });
-    $.ajax({
-      type: 'GET',
-      url: this.props.players,
-      success: function (data) {
-        if (this.isMounted()) {
-          this.setState({
-            players: data
-          });
-        }
+    helpers.getAllInfo()
+      .then(function (returnObj) {
+        this.setState({
+          teams: returnObj.teams,
+          totalWins: returnObj.matches,
+          goals: returnObj.goals,
+          players: returnObj.players
+        });
         this.parsePlayers();
-      }.bind(this)
-    });
-    $.ajax({
-      type: 'GET',
-      url: this.props.goals,
-      success: function (data) {
-        if (this.isMounted()) {
-          this.setState({
-            goals: data
-          });
-        }
-      }.bind(this)
-    });
+        this.calculateRanking();
+        this.getMatchData();
+      }.bind(this));
     window.addEventListener('matchChoice', this.renderMatch);
     window.addEventListener('playerChoice', this.renderPlayer);
   },
@@ -108,6 +71,7 @@ var App = React.createClass({
   },
   parsePlayers: function () {
     var newState = {1: [], 2: [], 3: [], 4: []};
+    console.log('hi parseplayers');
     for (var i = 1; i < 5; i++) {
       newState[i] = _.where(this.state.players, {teamId: i});
    }
@@ -162,7 +126,6 @@ var App = React.createClass({
     })
   },
   render: function () {
-    console.log(this.state.currentPlayer);
     var stuff = this.state.teams.sort(function (a, b) {
       return b.total - a.total;
     });
@@ -172,7 +135,7 @@ var App = React.createClass({
       )
     }.bind(this));
     return (
-      <div>
+      <div className="App">
         <Navigation />
         <Paper zDepth={1}>
           {this.state.viewType.league &&
